@@ -1,0 +1,69 @@
+services:
+  # --- OpenProject ---
+  openproject:
+    image: openproject/openproject:16
+    container_name: openproject
+    environment:
+      SECRET_KEY_BASE: "${OP_SECRET_KEY_BASE}"
+      OPENPROJECT_HOST__NAME: "localhost:8080"
+      OPENPROJECT_HTTPS: "false"
+      OPENPROJECT_DEFAULT__LANGUAGE: "ja"
+    ports:
+      - "8080:80"
+    volumes:
+      - ./data/openproject/pgdata:/var/openproject/pgdata
+      - ./data/openproject/assets:/var/openproject/assets
+    networks:
+      - op-rc-net
+
+  # --- Rocket.Chat ---
+  rocketchat:
+    image: registry.rocket.chat/rocketchat/rocket.chat:latest
+    container_name: rocketchat
+    environment:
+      ROOT_URL: http://localhost:3000
+      PORT: 3000
+      DEPLOY_METHOD: docker
+      DEPLOY_PLATFORM: compose
+      MONGO_URL: mongodb://mongodb:27017/rocketchat?replicaSet=rs0
+      OVERWRITE_SETTING_Show_Setup_Wizard: completed
+      INITIAL_USER: yes
+      ADMIN_USERNAME: "${ADMIN_USERNAME}"
+      ADMIN_NAME: "${ADMIN_NAME}"
+      ADMIN_EMAIL: "${ADMIN_EMAIL}"
+      ADMIN_PASS: "${ADMIN_PASS}"
+    depends_on:
+      - mongodb
+    ports:
+      - "3000:3000"
+    networks:
+      - op-rc-net
+
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--noauth"]
+    volumes:
+      - ./data/mongodb:/data/db
+    networks:
+      - op-rc-net
+
+  # --- Webhook Proxy (Python Script) ---
+  webhook-proxy:
+    build: ./proxy
+    container_name: webhook-proxy
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./proxy:/app
+    environment:
+      RC_WEBHOOK_URL: "${RC_WEBHOOK_URL}"
+      RC_WEBHOOK_TOKEN: "${RC_WEBHOOK_TOKEN}"
+      OP_API_URL: "${OP_API_URL}"
+      OP_API_KEY: "${OP_API_KEY}"
+    networks:
+      - op-rc-net
+
+networks:
+  op-rc-net:
+    driver: bridge
