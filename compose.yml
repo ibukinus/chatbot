@@ -61,6 +61,7 @@ services:
       RC_WEBHOOK_TOKEN: "${RC_WEBHOOK_TOKEN}"
       OP_API_URL: "${OP_API_URL}"
       OP_API_KEY: "${OP_API_KEY}"
+      OP_API_HOST: "localhost:8080"
     networks:
       - op-rc-net
 

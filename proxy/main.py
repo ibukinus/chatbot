@@ -17,6 +17,7 @@ RC_WEBHOOK_TOKEN = os.environ.get("RC_WEBHOOK_TOKEN") # Might be part of URL or 
 DEFAULT_CHANNEL = os.environ.get("DEFAULT_CHANNEL", "#general")
 OP_API_URL = os.environ.get("OP_API_URL", "http://openproject:80")
 OP_API_KEY = os.environ.get("OP_API_KEY")
+OP_API_HOST = os.environ.get("OP_API_HOST", "localhost:8080")
 
 # --- Data Loading ---
 def load_mappings():
@@ -73,7 +74,8 @@ def get_user_name(user_href):
         url = f"{OP_API_URL.rstrip('/')}{user_href}"
         
         logger.info(f"Fetching user info from {url}")
-        response = requests.get(url, auth=('apikey', OP_API_KEY), timeout=5)
+        headers = {'Host': OP_API_HOST}
+        response = requests.get(url, auth=('apikey', OP_API_KEY), headers=headers, timeout=5)
         
         if response.status_code == 200:
             user_data = response.json()
