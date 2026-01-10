@@ -64,6 +64,7 @@ services:
       OP_API_HOST: "localhost:8080"
     networks:
       - op-rc-net
+    stop_grace_period: 30s
 
 networks:
   op-rc-net:
