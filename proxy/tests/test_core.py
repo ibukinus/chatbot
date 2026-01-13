@@ -47,13 +47,13 @@ class TestRefactoredLogic(unittest.TestCase):
     def test_convert_mentions_new_format(self):
         text = '<mention class="mention" data-id="4" data-type="user" data-text="@OpenProject Admin">@OpenProject Admin</mention>&nbsp;\n\nメンション付きコメント'
         expected = "@admin.rc&nbsp;\n\nメンション付きコメント"
-        converted = convert_mentions(text)
+        converted = convert_mentions(text, mapper)
         self.assertEqual(converted, expected)
 
     def test_convert_mentions_fallback(self):
         text = '<mention class="mention" data-id="5" data-type="user" data-text="@Unknown User">@Unknown User</mention> Hello'
         expected = "@Unknown User Hello"
-        converted = convert_mentions(text)
+        converted = convert_mentions(text, mapper)
         self.assertEqual(converted, expected)
 
     def test_mapper_routing(self):

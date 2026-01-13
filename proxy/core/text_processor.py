@@ -1,20 +1,26 @@
 import re
-from .mapper import mapper
+from typing import Optional
+from .mapper import Mapper
 
-def convert_mentions(text):
+
+def convert_mentions(text: Optional[str], mapper: Mapper) -> str:
     r"""
     OpenProjectのメンションタグをRocket.Chatのメンション形式に置換する。
     形式: <mention ... data-text="@User Name" ...>...</mention>
     出力: @mapped_user または @User Name
+
+    Args:
+        text: 変換対象のテキスト
+        mapper: ユーザーマッピングを提供する Mapper インスタンス
     """
     if not text:
         return ""
 
-    def replace_match(match):
+    def replace_match(match: re.Match[str]) -> str:
         # group(1) は data-text="@..." 内のユーザー名
         op_user = match.group(1)
         rc_user = mapper.get_rc_user(op_user)
-        
+
         if rc_user:
             return f"@{rc_user}"
         else:

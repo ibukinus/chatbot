@@ -1,0 +1,6 @@
+-r requirements.txt
+mypy==1.13.0
+pandas-stubs==2.2.3.240913
+types-requests==2.32.0.20241016
+pytest==8.3.4
+pytest-cov==6.0.0
