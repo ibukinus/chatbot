@@ -1,6 +1,7 @@
 import logging
 from typing import Tuple
 from flask import Flask, request, jsonify, Response
+import config
 from config import setup_logging, validate_config
 from core.mapper import Mapper
 from core.text_processor import convert_mentions
@@ -77,7 +78,19 @@ def create_app() -> Flask:
 
             # 4. 通知メッセージの組み立て
             wp_subject = work_package.get('subject', 'No Subject')
-            message_text = f"### [{wp_subject}] (#{wp_id})\n\n{converted_notes}"
+
+            # プロジェクト識別子の取得を試みる
+            project_href = work_package.get('_links', {}).get('project', {}).get('href')
+            if project_href:
+                # /api/v3/projects/demo -> demo を抽出
+                project_id = project_href.rstrip('/').split('/')[-1]
+                wp_url = f"{config.OP_WEB_URL.rstrip('/')}/projects/{project_id}/work_packages/{wp_id}"
+            else:
+                # フォールバック: プロジェクトパスなしのシンプルな形式
+                logger.warning(f"Project href not found in webhook payload for WP #{wp_id}, using simple URL format")
+                wp_url = f"{config.OP_WEB_URL.rstrip('/')}/work_packages/{wp_id}"
+
+            message_text = f"### [{wp_subject}] (#{wp_id})\n🔗 [OpenProjectで表示]({wp_url})\n\n{converted_notes}"
 
             # 5. Rocket.Chat への送信
             success, result = rc_service.send_message(target_channel, message_text, alias=author_name)

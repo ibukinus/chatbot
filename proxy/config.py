@@ -12,6 +12,7 @@ DEFAULT_CHANNEL: str = os.environ.get("DEFAULT_CHANNEL", "#general")
 OP_API_URL: str = os.environ.get("OP_API_URL", "http://openproject:80")
 OP_API_KEY: Optional[str] = os.environ.get("OP_API_KEY")
 OP_API_HOST: str = os.environ.get("OP_API_HOST", "localhost:8080")
+OP_WEB_URL: str = os.environ.get("OP_WEB_URL", "http://localhost:8080")
 
 # ロギング設定
 LOG_LEVEL: str = os.environ.get("LOG_LEVEL", "INFO").upper()

@@ -55,7 +55,12 @@ class TestWebhookEndpoint(unittest.TestCase):
                     "workPackage": {
                         "id": 123,
                         "subject": "Test WP",
-                        "_links": {"project": {"title": "Test Project"}}
+                        "_links": {
+                            "project": {
+                                "href": "/api/v3/projects/demo-project",
+                                "title": "Test Project"
+                            }
+                        }
                     }
                 }
             }
@@ -67,6 +72,85 @@ class TestWebhookEndpoint(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.data)
         self.assertEqual(data['status'], 'success')
+
+    @patch('proxy.services.rocketchat.rc_service.send_message')
+    @patch('proxy.services.openproject.op_service.get_user_name')
+    @patch('proxy.core.mapper.mapper.get_channel')
+    def test_webhook_includes_url_with_project(self, mock_get_channel, mock_get_user, mock_send):
+        """正常処理でワークパッケージURL（プロジェクトパス付き）が含まれることを確認"""
+        mock_get_channel.return_value = "#test"
+        mock_get_user.return_value = "Test User"
+        mock_send.return_value = (True, "#test")
+
+        payload = {
+            "action": "work_package_comment:comment",
+            "activity": {
+                "comment": {"raw": "Test comment"},
+                "_links": {"user": {"href": "/api/v3/users/1"}},
+                "_embedded": {
+                    "workPackage": {
+                        "id": 123,
+                        "subject": "Test WP",
+                        "_links": {
+                            "project": {
+                                "href": "/api/v3/projects/demo-project",
+                                "title": "Test Project"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        response = self.client.post('/webhook',
+                                   data=json.dumps(payload),
+                                   content_type='application/json')
+
+        # RocketChatService.send_message が呼び出される際の引数を検証
+        args = mock_send.call_args[0]
+        channel, message_text, alias = args
+
+        # プロジェクトパス付きURLが含まれていることを確認
+        self.assertIn("/projects/demo-project/work_packages/123", message_text)
+        self.assertIn("OpenProjectで表示", message_text)
+        self.assertEqual(response.status_code, 200)
+
+    @patch('proxy.services.rocketchat.rc_service.send_message')
+    @patch('proxy.services.openproject.op_service.get_user_name')
+    @patch('proxy.core.mapper.mapper.get_channel')
+    def test_webhook_includes_url_fallback(self, mock_get_channel, mock_get_user, mock_send):
+        """project.hrefが無い場合、シンプルなURL形式にフォールバックすることを確認"""
+        mock_get_channel.return_value = "#test"
+        mock_get_user.return_value = "Test User"
+        mock_send.return_value = (True, "#test")
+
+        payload = {
+            "action": "work_package_comment:comment",
+            "activity": {
+                "comment": {"raw": "Test comment"},
+                "_links": {"user": {"href": "/api/v3/users/1"}},
+                "_embedded": {
+                    "workPackage": {
+                        "id": 123,
+                        "subject": "Test WP",
+                        "_links": {"project": {"title": "Test Project"}}  # href なし
+                    }
+                }
+            }
+        }
+
+        response = self.client.post('/webhook',
+                                   data=json.dumps(payload),
+                                   content_type='application/json')
+
+        args = mock_send.call_args[0]
+        channel, message_text, alias = args
+
+        # シンプルなURL形式が含まれていることを確認
+        self.assertIn("/work_packages/123", message_text)
+        self.assertNotIn("/projects/", message_text)
+        self.assertIn("OpenProjectで表示", message_text)
+        self.assertEqual(response.status_code, 200)
 
     def test_health_endpoint(self):
         """ヘルスチェックエンドポイント"""
